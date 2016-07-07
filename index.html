@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Canvas Animation</title>
+</head>
+
+<body>
+<canvas id="canvas"></canvas>
+<script>
+    var canvas = document.querySelector('#canvas');
+    var ctx = canvas.getContext('2d');
+    function imgInit(src,callback){
+        var img = new Image();
+        img.src = src;
+        img.onload = function () {
+            callback(img);
+        }
+    }
+    /*
+    * Check two array is equaled
+    * @param {Array} a
+    * @param {Array} b
+    * @param {Boolean} bool
+    * @return {Boolean}
+    * */
+    function isArrayEqual(a,b,bool){
+        return bool?a.join() === b.join():a.sort().join() === b.sort().join();
+    }
+    /*
+    * Find highest occurrence in an array
+    * @params {Array} array
+    * @return {String;Number} maxEl
+    * */
+    function mode(array) {
+        if(array.length == 0)   return null;
+        var modeMap = {};
+        var maxEl = array[0], maxCount = 1;
+        for(var i = 0; i < array.length; i++){
+            var el = array[i];
+            if(modeMap[el] == null)
+                modeMap[el] = 1;
+            else
+                modeMap[el]++;
+            if(modeMap[el] > maxCount){
+                maxEl = el;
+                maxCount = modeMap[el];
+            }
+        }
+        return maxEl;
+    }
+    /*
+    * Check r is equal to compareR under precision
+    * @param {Number} r
+    * @param {Number} compareR
+    * @param {Number} perUpper
+    * @param {Number} perBelow
+    * @return {Boolean}
+    * */
+    function rgbPrecise(r,compareR,perUpper,perBelow){
+        var min;
+        perUpper = perUpper || 0;
+        perBelow = perBelow || -perUpper;
+        min = r - compareR;
+        return  min < perUpper && min >= perBelow;
+    }
+    /*
+    * Init option value
+    *
+    * */
+    function initOption(option){
+
+    }
+    function similateImage(src,color,option) {
+        _color = color || 255;
+        option = initOption(option);
+        imgInit(src, function (img) {
+            var dataList,imgData;
+            var w = img.width;
+            var h = img.height;
+            var r = [], g = [], b = [];
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(img,0,0);
+            imgData = ctx.getImageData(0,0,w,h);
+            dataList = imgData.data;
+            var len = dataList.length/4;
+            for(var i = 0;i<len;i++){
+                r[i] =dataList[i*4];
+                g[i] = dataList[i*4+1];
+                b[i] = dataList[i*4+2];
+            }
+            const red = mode(r);
+            const green = mode(g);
+            const blue = mode(b);
+            for(var n = 0;n<len;n++){
+                if(rgbPrecise(dataList[n*4],red,25) &&
+                   rgbPrecise(dataList[n*4+1],green,25) &&
+                   rgbPrecise(dataList[n*4+2],blue,25)){
+                    dataList[n*4] = _color;
+                    dataList[n*4+1] = _color;
+                    dataList[n*4+2] = _color;
+                }else{
+
+                }
+            }
+            imgData.data = dataList;
+            ctx.putImageData(imgData,0,0);
+        })
+    }
+    similateImage('./image.jpg')
+</script>
+</body>
+</html>
