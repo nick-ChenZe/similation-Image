@@ -11,11 +11,19 @@
 <script>
     var canvas = document.querySelector('#canvas');
     var ctx = canvas.getContext('2d');
+
     function imgInit(src,callback){
         var img = new Image();
         img.src = src;
         img.onload = function () {
-            callback(img);
+            var w = img.width;
+            var h = img.height;
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(img,0,0);
+            setTimeout(function () {
+                callback(img,w,h);
+            },1000);
         }
     }
     /*
@@ -66,6 +74,23 @@
         return  min < perUpper && min >= perBelow;
     }
     /*
+    *
+    *
+    * */
+    CanvasRenderingContext2D.prototype.drawCircle = function(x,y,r,color) {
+        if(typeof x == 'object'){
+
+        }else{
+            this.save();
+            this.fillStyle = color;
+            this.beginPath();
+            this.arc(x, y, r, 0, 2 * Math.PI);
+            this.fill();
+            this.restore();
+        }
+        return this;
+    };
+    /*
     * Init option value
     *
     * */
@@ -75,14 +100,10 @@
     function similateImage(src,color,option) {
         _color = color || 255;
         option = initOption(option);
-        imgInit(src, function (img) {
-            var dataList,imgData;
-            var w = img.width;
-            var h = img.height;
+        imgInit(src, function (img,w,h) {
+            var dataList,imgData,positionList=[],outPosList = [],random;
             var r = [], g = [], b = [];
-            canvas.width = w;
-            canvas.height = h;
-            ctx.drawImage(img,0,0);
+
             imgData = ctx.getImageData(0,0,w,h);
             dataList = imgData.data;
             var len = dataList.length/4;
@@ -98,18 +119,73 @@
                 if(rgbPrecise(dataList[n*4],red,25) &&
                    rgbPrecise(dataList[n*4+1],green,25) &&
                    rgbPrecise(dataList[n*4+2],blue,25)){
-                    dataList[n*4] = _color;
-                    dataList[n*4+1] = _color;
-                    dataList[n*4+2] = _color;
+                   dataList[n*4+3] = 0;
                 }else{
-
+                    //判断概率被选中
+                    let color = '#'+dataList[n*4].toString(16) + dataList[n*4+1].toString(16) + dataList[n*4+2].toString(16);
+                    dataList[n*4] = 255;
+                    dataList[n*4+1] = 255;
+                    dataList[n*4+2] = 255;
+                    random = Math.floor(Math.random()*100) == 0;
+                    if(random){
+                        var radius = Math.random()*10;
+                        var ra = 0;
+                        positionList.push({
+                            color,n,radius,ra
+                        });
+                    }
                 }
             }
             imgData.data = dataList;
             ctx.putImageData(imgData,0,0);
+
+            let _red = red;
+            let _green = green;
+            let _blue = blue;
+            let count = 0;
+//            let minColor = (red< green && red<blue) ? red : (blue<green?blue:green);
+            var drawCirlcle = setInterval(function(){
+                if(count == positionList.length){
+                    clearInterval(drawCirlcle);
+                    var animation = setInterval(function () {
+                        ctx.clearRect(0,0,w,h);
+                        positionList.forEach(function(value,n,arr){
+                            let x = value.n%w;
+                            let y = value.n/w;
+                            arr[n].y = (arr[n].y || y ) + Math.random()*10-5;
+                            arr[n].x = (arr[n].x || x ) + Math.random()*10-5;
+
+                            ctx.drawCircle(arr[n].x,arr[n].y,value.radius,value.color)
+                        })
+                    },10)
+                }
+                positionList.forEach(function (value,n,arr) {
+                    let x = value.n%w;
+                    let y = value.n/w;
+                    let color = value.color;
+                    if(value.ra < value.radius && !arr[n].isCount){
+                        arr[n].ra += .5;
+                        ctx.drawCircle(x,y,arr[n].ra,color)
+                    }else if(!arr[n].isCount){
+                        arr[n].isCount = true;
+                        count++;
+                    }
+                });
+                let step1 = parseInt((255-red)/10);
+                let step2 = parseInt((255-green)/10);
+                let step3 = parseInt((255-blue)/10);
+                if(_red + step1 > 255 || _green + step2 > 255 || _blue + step3 > 255){
+                    canvas.style.backgroundColor = '#fff';
+                }else{
+                    _red += step1;
+                    _green += step2;
+                    _blue += step3;
+                    canvas.style.backgroundColor = '#'+(_red).toString(16)+(_green).toString(16)+(_blue).toString(16);
+                }
+            },100)
         })
     }
-    similateImage('./image.jpg')
+    similateImage('./assets/image.jpg')
 </script>
 </body>
 </html>
